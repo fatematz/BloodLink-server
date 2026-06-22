@@ -4,6 +4,7 @@ const app = express();
 const port = 5000;
 require("dotenv").config();
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const { ObjectId } = require("mongodb");
 
 app.use(cors());
 app.use(express.json());
@@ -32,25 +33,31 @@ async function run() {
     const donationRequestsCollection = database.collection("donation_requests");
 
 
-    app.post("/api/donation-requests", async (req, res) => {
-      try {
-        const job = req.body; 
 
-        if (!job.recipientName || !job.bloodGroup) {
-          return res.status(400).json({ message: "Missing required fields" });
-        }
 
-        const newRequest = {
-          ...job,
-          createdAt: new Date()
-        };
 
-        const result = await donationRequestsCollection.insertOne(newRequest);
-        res.status(201).send({ success: true, insertedId: result.insertedId });
-      } catch (err) {
-        res.status(500).json({ message: err.message });
-      }
-    });
+
+app.post("/api/donation-requests", async (req, res) => {
+  try {
+    const job = req.body; 
+
+    if (!job.recipientName || !job.bloodGroup) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // এখানে donationStatus: "pending" যোগ করে দেওয়া হয়েছে
+    const newRequest = {
+      ...job,
+      donationStatus: "pending", 
+      createdAt: new Date()
+    };
+
+    const result = await donationRequestsCollection.insertOne(newRequest);
+    res.status(201).send({ success: true, insertedId: result.insertedId });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 
 app.get("/api/donation-requests", async (req, res) => {
@@ -133,18 +140,52 @@ app.delete('/api/donation-requests/:id', async (req, res) => {
 });
 
 
+
 app.patch("/api/donation-requests/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const filter = { _id: new require("mongodb").ObjectId(id) };
-    const updateDoc = { $set: req.body };
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    const filter = { _id: new ObjectId(id) }; 
+    
+    
+    const updateDoc = { 
+      $set: {
+        donationStatus: req.body.donationStatus,
+        donorName: req.body.donorName,
+        donorEmail: req.body.donorEmail
+      } 
+    };
+    
     const result = await donationRequestsCollection.updateOne(filter, updateDoc);
-    res.send(result);
+    
+    if (result.matchedCount === 0) {
+        return res.status(404).json({ message: "Request not found" });
+    }
+    
+    res.send({ success: true, result });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
   }
 });
 
+
+
+app.patch("/api/users/update/:id", async (req, res) => {
+  const id = req.params.id;
+  const { status, role } = req.body;
+  const filter = { _id: new ObjectId(id) };
+  const updateDoc = {
+    $set: {
+      ...(status && { status }), 
+      ...(role && { role })      
+    },
+  };
+  const result = await usersCollection.updateOne(filter, updateDoc);
+  res.send(result);
+});
 
 
 
