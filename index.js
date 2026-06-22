@@ -53,41 +53,41 @@ async function run() {
     });
 
 
-    app.get("/api/donation-requests", async (req, res) => {
-      try {
-        const query = {};
-        
-        if (req.query.email) {
-          query.requesterEmail = req.query.email;
-        }
+app.get("/api/donation-requests", async (req, res) => {
+  try {
+    const query = {};
+    
+    if (req.query.requesterEmail) {
+      query.requesterEmail = req.query.requesterEmail;
+    }
 
-        if (req.query.status) {
-          query.donationStatus = req.query.status;
-        }
+    if (req.query.status) {
+      query.donationStatus = req.query.status;
+    }
 
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 5; 
-        const skip = (page - 1) * limit;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5; 
+    const skip = (page - 1) * limit;
 
-        const requests = await donationRequestsCollection
-          .find(query)
-          .sort({ _id: -1 }) 
-          .skip(skip)
-          .limit(limit)
-          .toArray();
+    const requests = await donationRequestsCollection
+      .find(query)
+      .sort({ _id: -1 }) 
+      .skip(skip)
+      .limit(limit)
+      .toArray();
 
-        const totalRequests = await donationRequestsCollection.countDocuments(query);
+    const totalRequests = await donationRequestsCollection.countDocuments(query);
 
-        res.send({
-          requests,
-          totalPages: Math.ceil(totalRequests / limit),
-          currentPage: page,
-          totalRequests
-        });
-      } catch (err) {
-        res.status(500).json({ message: err.message });
-      }
+    res.send({
+      requests,
+      totalPages: Math.ceil(totalRequests / limit),
+      currentPage: page,
+      totalRequests
     });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
     
     app.get("/api/users", async (req, res) => {
@@ -105,6 +105,49 @@ async function run() {
         res.status(500).json({ message: err.message });
       }
     });
+
+
+app.get("/api/donation-requests/:id", async (req, res) => {
+  const { ObjectId } = require("mongodb");
+  try {
+    const result = await donationRequestsCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!result) return res.status(404).json({ message: "Not found" });
+    res.send(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+app.delete('/api/donation-requests/:id', async (req, res) => {
+    const { ObjectId } = require("mongodb");
+    const id = req.params.id;
+    try {
+        const query = { _id: new ObjectId(id) };
+        const result = await donationRequestsCollection.deleteOne(query);
+        res.send(result);
+    } catch (error) {
+        console.error("Backend Error:", error);
+        res.status(500).send({ message: "Internal Server Error" });
+    }
+});
+
+
+app.patch("/api/donation-requests/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const filter = { _id: new require("mongodb").ObjectId(id) };
+    const updateDoc = { $set: req.body };
+    const result = await donationRequestsCollection.updateOne(filter, updateDoc);
+    res.send(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+
+
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
