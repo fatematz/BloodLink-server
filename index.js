@@ -188,6 +188,21 @@ app.patch("/api/users/update/:id", async (req, res) => {
 });
 
 
+app.patch("/api/users/update-profile/:id", async (req, res) => {
+    const { id } = req.params;
+    const { bloodGroup, education, address, bio } = req.body;
+
+    const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+    if (user.status === 'blocked') {
+        return res.status(403).json({ message: "You are blocked and cannot edit your profile." });
+    }
+
+    const updateDoc = {
+        $set: { bloodGroup, education, address, bio }
+    };
+    const result = await usersCollection.updateOne({ _id: new ObjectId(id) }, updateDoc);
+    res.send(result);
+});
 
 
     console.log(
