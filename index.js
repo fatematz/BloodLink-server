@@ -114,6 +114,20 @@ app.get("/api/donation-requests", async (req, res) => {
     });
 
 
+app.get("/api/users/email/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const user = await usersCollection.findOne({ email: email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    
+    const { passwordHash, ...safeUser } = user;
+    res.send(safeUser);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 app.get("/api/donation-requests/:id", async (req, res) => {
   const { ObjectId } = require("mongodb");
   try {
@@ -189,20 +203,35 @@ app.patch("/api/users/update/:id", async (req, res) => {
 
 
 app.patch("/api/users/update-profile/:id", async (req, res) => {
-    const { id } = req.params;
-    const { bloodGroup, education, address, bio } = req.body;
+    try {
+        const { id } = req.params;
+        const { bloodGroup, district, upazila } = req.body;
 
-    const user = await usersCollection.findOne({ _id: new ObjectId(id) });
-    if (user.status === 'blocked') {
-        return res.status(403).json({ message: "You are blocked and cannot edit your profile." });
+        const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        if (user.status === 'blocked') {
+            return res.status(403).json({ message: "You are blocked and cannot edit your profile." });
+        }
+
+        const updateDoc = {
+            $set: { 
+                bloodGroup: bloodGroup, 
+                district: district, 
+                upazila: upazila 
+            }
+        };
+        const result = await usersCollection.updateOne({ _id: new ObjectId(id) }, updateDoc);
+        res.send(result);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
-
-    const updateDoc = {
-        $set: { bloodGroup, education, address, bio }
-    };
-    const result = await usersCollection.updateOne({ _id: new ObjectId(id) }, updateDoc);
-    res.send(result);
 });
+
+
+
+
+
 
 
     console.log(
