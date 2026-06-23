@@ -45,7 +45,6 @@ app.post("/api/donation-requests", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // এখানে donationStatus: "pending" যোগ করে দেওয়া হয়েছে
     const newRequest = {
       ...job,
       donationStatus: "pending", 
@@ -153,23 +152,22 @@ app.delete('/api/donation-requests/:id', async (req, res) => {
     }
 });
 
-
+// new
 
 app.patch("/api/donation-requests/:id", async (req, res) => {
   try {
     const id = req.params.id;
+    
     if (!ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid ID format" });
     }
 
+    const { donationStatus } = req.body;
     const filter = { _id: new ObjectId(id) }; 
-    
     
     const updateDoc = { 
       $set: {
-        donationStatus: req.body.donationStatus,
-        donorName: req.body.donorName,
-        donorEmail: req.body.donorEmail
+        donationStatus: donationStatus
       } 
     };
     
@@ -230,7 +228,33 @@ app.patch("/api/users/update-profile/:id", async (req, res) => {
 
 
 
+app.patch("/api/donation-requests/edit/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updatedData = req.body; 
 
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $set: {
+        ...updatedData 
+      },
+    };
+
+    const result = await donationRequestsCollection.updateOne(filter, updateDoc);
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    res.send({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+});
 
 
 
