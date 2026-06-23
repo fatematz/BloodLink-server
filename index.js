@@ -31,6 +31,7 @@ async function run() {
 
     const usersCollection = database.collection("user");
     const donationRequestsCollection = database.collection("donation_requests");
+    const fundsCollection = database.collection("funds");
 
 
 
@@ -95,22 +96,6 @@ app.get("/api/donation-requests", async (req, res) => {
   }
 });
 
-    
-    // app.get("/api/users", async (req, res) => {
-    //   try {
-    //     const query = {};
-    //     if (req.query.status) query.status = req.query.status;
-    //     if (req.query.role) query.role = req.query.role;
-
-    //     const users = await usersCollection.find(query).toArray();
-
-    //     const safe = users.map(({ passwordHash, ...rest }) => rest);
-
-    //     res.send(safe);
-    //   } catch (err) {
-    //     res.status(500).json({ message: err.message });
-    //   }
-    // });
 
     
 app.get("/api/users", async (req, res) => {
@@ -154,6 +139,23 @@ app.get("/api/users/email/:email", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+
+app.get("/api/funds", async (req, res) => {
+  try {
+    const funds = await fundsCollection
+      .find()
+      .sort({ _id: -1 })
+      .toArray();
+    
+    const total = funds.reduce((sum, f) => sum + (f.amount || 0), 0);
+    
+    res.send({ funds, total });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 
 app.patch("/api/donation-requests/edit/:id", async (req, res) => {
