@@ -157,6 +157,27 @@ app.get("/api/funds", async (req, res) => {
 });
 
 
+app.post("/api/funds", async (req, res) => {
+  try {
+    const { name, email, amount, transactionId } = req.body;
+    
+    const fund = {
+      name,
+      email,
+      amount: parseFloat(amount),
+      transactionId,
+      date: new Date(),
+      status: "success"
+    };
+    
+    const result = await fundsCollection.insertOne(fund);
+    res.status(201).send({ success: true, insertedId: result.insertedId });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 
 app.patch("/api/donation-requests/edit/:id", async (req, res) => {
   try {
