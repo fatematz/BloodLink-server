@@ -96,21 +96,50 @@ app.get("/api/donation-requests", async (req, res) => {
 });
 
     
-    app.get("/api/users", async (req, res) => {
-      try {
-        const query = {};
-        if (req.query.status) query.status = req.query.status;
-        if (req.query.role) query.role = req.query.role;
+    // app.get("/api/users", async (req, res) => {
+    //   try {
+    //     const query = {};
+    //     if (req.query.status) query.status = req.query.status;
+    //     if (req.query.role) query.role = req.query.role;
 
-        const users = await usersCollection.find(query).toArray();
+    //     const users = await usersCollection.find(query).toArray();
 
-        const safe = users.map(({ passwordHash, ...rest }) => rest);
+    //     const safe = users.map(({ passwordHash, ...rest }) => rest);
 
-        res.send(safe);
-      } catch (err) {
-        res.status(500).json({ message: err.message });
-      }
+    //     res.send(safe);
+    //   } catch (err) {
+    //     res.status(500).json({ message: err.message });
+    //   }
+    // });
+
+    
+app.get("/api/users", async (req, res) => {
+  try {
+    const query = {};
+if (req.query.status) query.status = req.query.status;
+if (req.query.role) query.role = req.query.role;
+if (req.query.bloodGroup) query.bloodGroup = req.query.bloodGroup;
+if (req.query.district) query.district = req.query.district;
+if (req.query.upazila) query.upazila = req.query.upazila;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await usersCollection.countDocuments(query);
+    const users = await usersCollection.find(query).skip(skip).limit(limit).toArray();
+    const safe = users.map(({ passwordHash, ...rest }) => rest);
+
+    res.send({
+      users: safe,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total
     });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 
 app.get("/api/users/email/:email", async (req, res) => {
@@ -123,6 +152,35 @@ app.get("/api/users/email/:email", async (req, res) => {
     res.send(safeUser);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+
+app.patch("/api/donation-requests/edit/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updatedData = req.body; 
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $set: {
+        ...updatedData 
+      },
+    };
+
+    const result = await donationRequestsCollection.updateOne(filter, updateDoc);
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    res.send({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
   }
 });
 
@@ -228,33 +286,7 @@ app.patch("/api/users/update-profile/:id", async (req, res) => {
 
 
 
-app.patch("/api/donation-requests/edit/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const updatedData = req.body; 
 
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid ID format" });
-    }
-
-    const filter = { _id: new ObjectId(id) };
-    const updateDoc = {
-      $set: {
-        ...updatedData 
-      },
-    };
-
-    const result = await donationRequestsCollection.updateOne(filter, updateDoc);
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
-    res.send({ success: true, result });
-  } catch (err) {
-    res.status(500).json({ message: "Internal Server Error", error: err.message });
-  }
-});
 
 
 
