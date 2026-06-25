@@ -1,49 +1,29 @@
-const express = require('express')
-const cors = require('cors');
-const app = express()
-const port = 5000
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const app = express();
+const port = 5000;
+require("dotenv").config();
+const { MongoClient, ServerApiVersion } = require("mongodb");
+const { ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 app.use(cors());
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-
-app.get('/', (req, res) => {
-    res.send('Hello World!')
-})
-
-const logger = (req, res, next) => {
-    console.log('logger middleware logged', req.params);
-    next();
-}
-
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
 
 const uri = process.env.MONGODB_URI;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
 });
 
-// async function run() {
-//     try {
-//         // Connect the client to the server	(optional starting in v4.7)
-//         await client.connect();
-
-client.connect(() => {
-    console.log('connecting to Mongo db');
-}).catch(console.dir)
-
-  const database = client.db("assignment_10");
-    const usersCollection = database.collection("user");
-    const donationRequestsCollection = database.collection("donation_requests");
-    const fundsCollection = database.collection("funds");
 
 
 const verifyToken = (req, res, next) => {
@@ -70,7 +50,22 @@ const verifyAdmin = (req, res, next) => {
   next();
 };
 
-// jobs related apis
+
+
+
+// async function run() {
+//   try {
+//     await client.connect();
+
+
+client.connect(() => {
+  console.log("connecting to Mongo db");
+}).catch(console.dir)
+
+    const database = client.db("assignment_10");
+    const usersCollection = database.collection("user");
+    const donationRequestsCollection = database.collection("donation_requests");
+    const fundsCollection = database.collection("funds");
 
 
     app.post("/api/auth/jwt", async (req, res) => {
@@ -135,7 +130,7 @@ const verifyAdmin = (req, res, next) => {
       }
     });
 
-    app.get("/api/funds",  verifyToken, async (req, res) => {
+    app.get("/api/funds", async (req, res) => {
       try {
         const funds = await fundsCollection.find().sort({ _id: -1 }).toArray();
         const total = funds.reduce((sum, f) => sum + (f.amount || 0), 0);
@@ -144,7 +139,6 @@ const verifyAdmin = (req, res, next) => {
         res.status(500).json({ message: err.message });
       }
     });
-
 
     app.get("/api/users/email/:email", async (req, res) => {
       try {
@@ -330,37 +324,16 @@ const verifyAdmin = (req, res, next) => {
     );
 
 
-
-// company related apis
-// app.get('/api/companies', async (req, res) => {
-//     const cursor = companyCollection.find().skip(4);
-//     const result = await cursor.toArray();
-//     res.send(result);
-// })
-
-// inefficient way to join/aggregate collection
-
-
-
-
-// subscription 
-
-// Send a ping to confirm a successful connection
-// await client.db("admin").command({ ping: 1 });
-//         console.log("Pinged your deployment. You successfully connected to MongoDB!");
-//     } finally {
-//         // Ensures that the client will close when you finish/error
-//         // await client.close();
-//     }
+//     console.log("Connected to MongoDB!");
+//   } catch (err) {
+//     console.error(err);
+//   }
 // }
 // run().catch(console.dir);
 
-
-
-
-
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-})
+  console.log(`Server running on port ${port}`);
+});
+
 
 module.exports = app;
