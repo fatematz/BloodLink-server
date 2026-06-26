@@ -36,9 +36,13 @@ const client = new MongoClient(uri, {
 //         // Connect the client to the server	(optional starting in v4.7)
 //         await client.connect();
 
-client.connect(() => {
-    console.log('connecting to Mongo db');
-}).catch(console.dir)
+// client.connect(() => {
+//     console.log('connecting to Mongo db');
+// }).catch(console.dir)
+
+client.connect()
+  .then(() => console.log("Connected to MongoDB!"))
+  .catch(console.dir);
 
   const database = client.db("assignment_10");
     const usersCollection = database.collection("user");
